@@ -1,0 +1,132 @@
+<template>
+  <view class="container">
+    <canvas class="ec-canvas" canvas-id="ec-canvas"></canvas>
+    <canvas class="ec-canvas-other" canvas-id="ec-canvas-other"></canvas>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import gauge from '@/utils/ec-canvas/gauge'
+  import WxCanvas from '@/utils/ec-canvas/wx-canvas'
+  import * as echarts from '@/utils/ec-canvas/echarts'
+  let chart
+  let chartt
+  export default class Index extends wepy.page {
+    config = {
+      navigationBarTitleText: 'wepy-echarts'
+    }
+    watch = {
+      ec (nv, ov) {
+        chart.setOption(this.ec.option)
+      },
+      ecc (nv, ov) {
+        chartt.setOption(this.ecc.option)
+      }
+    }
+
+    data = {
+      ec:gauge({
+        dataSpo:[{
+          value: 0,
+          name: '血氧(%)'
+        }]
+      }),
+      ecc:gauge({
+        dataSpo:[{
+          value: 0,
+          name: '血氧(%)'
+        }]
+      }),
+      canvasId: 'ec-canvas',
+      canvasClass:'.ec-canvas',
+      canvasIdOther: 'ec-canvas-other',
+      canvasClassOther:'.ec-canvas-other'
+    }
+
+    computed = {
+    }
+
+    methods = {
+    }
+    onLoad() {
+      this.init(null,this.canvasId,this.canvasClass,this.ec.option,(canvas, width, height,option)=>{
+        chart = echarts.init(canvas, null, {
+          width: width,
+          height: height
+        })
+        canvas.setChart(chart)
+        chart.setOption(option)
+      })
+      this.init(null,this.canvasIdOther,this.canvasClassOther,this.ecc.option,(canvas, width, height,option)=>{
+        chartt = echarts.init(canvas, null, {
+          width: width,
+          height: height
+        })
+        canvas.setChart(chartt)
+        chartt.setOption(option)
+      })
+      setInterval(()=>{
+        this.ec=gauge({
+          dataSpo:[{
+            value:  Math.floor(Math.random()*(50 - 100) + 100),
+            name: '血氧(%)'
+          }]
+        })
+        this.ecc=gauge({
+          dataSpo:[{
+            value:  Math.floor(Math.random()*(50 - 100) + 100),
+            name: '血氧(%)'
+          }]
+        })
+        this.$apply()
+      },1000)
+    }
+  init (callback,canvasId,canvasClass,option,initChart) {
+    const version = wepy.getSystemInfoSync().SDKVersion.split('.').map(n => parseInt(n, 10))
+    const isValid = version[0] > 1 || (version[0] === 1 && version[1] > 9) ||
+        (version[0] === 1 && version[1] === 9 && version[2] >= 91)
+    if (!isValid) {
+      console.error('微信基础库版本过低，需大于等于 1.9.91。' +
+            '参见：https://github.com/ecomfe/echarts-for-weixin' +
+            '#%E5%BE%AE%E4%BF%A1%E7%89%88%E6%9C%AC%E8%A6%81%E6%B1%82')
+      return
+    }
+    let ctx = wepy.createCanvasContext(canvasId, this)
+
+    const canvas = new WxCanvas(ctx, canvasId)
+
+    echarts.setCanvasCreator(() => {
+      return canvas
+    })
+
+    var query = wepy.createSelectorQuery()
+    query.select(canvasClass).boundingClientRect(res => {
+      if (typeof callback === 'function') {
+        this.chart = callback(canvas, res.width, res.height)
+      } else if (true) {
+        this.chart = initChart(canvas, res.width, res.height,option)
+      }
+    }).exec()
+  }
+  }
+</script>
+<style>
+page{
+  width: 100%;
+  height: 100%;
+}
+.container{
+  width: 100%;
+  height: 100%;
+}
+.ec-canvas {
+  width: 100%;
+  height: 100%;
+}
+.ec-canvas-other {
+  width: 100%;
+  height: 100%;
+}
+</style>
+
